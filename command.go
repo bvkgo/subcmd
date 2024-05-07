@@ -13,7 +13,16 @@
 // through the optional `interface{ CommandHelp() string }` method on the
 // Command objects.
 //
-// # EXAMPLE
+// # EXAMPLE 1
+//
+//	func listJobs(ctx context.Context, args []string) error {
+//		...
+//		return nil
+//	}
+//
+//	var listCmd = subcmd.New("jobs", "Prints the job list.", subcmd.MainFunc(listJobs))
+//
+// # EXAMPLE 2
 //
 //	type runCmd struct {
 //		background  bool
@@ -25,7 +34,7 @@
 //
 //	// Run implements the `main` method for "run" subcommand.
 //	func (r *runCmd) Run(ctx context.Context, args []string) error {
-//	 ...
+//		...
 //		if len(p.dataDir) == 0 {
 //			p.dataDir = filepath.Join(os.Getenv("HOME"), ".data")
 //		}
@@ -41,7 +50,7 @@
 //		fset.StringVar(&r.ip, "ip", "0.0.0.0", "TCP ip address for the daemon")
 //		fset.StringVar(&r.secretsPath, "secrets-file", "", "path to credentials file")
 //		fset.StringVar(&r.dataDir, "data-dir", "", "path to the data directory")
-//	  return fset, MainFunc(r.Run)
+//		return fset, MainFunc(r.Run)
 //	}
 package subcmd
 
@@ -88,4 +97,28 @@ func Run(ctx context.Context, cmds []Command, args []string) error {
 		subcmds: cmds,
 	}
 	return root.run(ctx, args)
+}
+
+type simpleCmd struct {
+	name        string
+	description string
+	mainf       MainFunc
+}
+
+func (c *simpleCmd) Command() (*flag.FlagSet, MainFunc) {
+	return flag.NewFlagSet(c.name, flag.ContinueOnError), c.mainf
+}
+
+func (c *simpleCmd) CommandHelp() string {
+	return c.description
+}
+
+// New creates a subcommand with a name and main function that has no
+// command-line flags.
+func New(name, description string, mainf MainFunc) Command {
+	return &simpleCmd{
+		name:        name,
+		description: description,
+		mainf:       mainf,
+	}
 }
